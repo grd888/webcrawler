@@ -1,4 +1,4 @@
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 
 def normalize_url(url):
@@ -27,3 +27,17 @@ def get_first_paragraph_from_html(html):
     return soup.find('p').get_text()
   else:
     return ""
+  
+def get_urls_from_html(html, base_url):
+  soup = BeautifulSoup(html, 'html.parser')
+  urls = []
+  for link in soup.find_all('a'):
+    href = link.get('href')
+    if href.startswith('/'):
+      urls.append(urljoin(base_url, href))
+    else:
+      urls.append(href) 
+  return urls
+      
+    
+  
