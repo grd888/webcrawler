@@ -39,5 +39,16 @@ def get_urls_from_html(html, base_url):
       urls.append(href) 
   return urls
       
-    
+def get_images_from_html(html, base_url):
+  soup = BeautifulSoup(html, 'html.parser')
+  images = []
+  for image in soup.find_all('img'):
+    src = image.get('src')
+    if src is None:
+      continue
+    if src and src.startswith('/'):
+      images.append(urljoin(base_url, src))
+    elif src:
+      images.append(src) 
+  return images
   
