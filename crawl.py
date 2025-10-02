@@ -1,5 +1,15 @@
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
+import requests
+
+def get_html(url):
+  r = requests.get(url, headers={"User-Agent": "BootCrawler/1.0"})
+  if r.status_code >= 400:
+    raise Exception(f"Failed to fetch {url}")
+  if not r.headers.get("Content-Type").startswith("text/html"):
+    raise Exception(f"Content-Type is not text/html: {url}")
+  return r.text
+  
 
 def normalize_url(url):
   parsed_url = urlparse(url)
