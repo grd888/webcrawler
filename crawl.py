@@ -2,6 +2,38 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 import requests
 
+def crawl_page(base_url, current_url=None, page_data=None):
+  if current_url is None:
+    current_url = base_url
+  if page_data is None:
+    page_data = {}
+    
+  base_domain = urlparse(base_url).netloc
+  current_domain = urlparse(current_url).netloc
+  if base_domain != current_domain:
+    return page_data
+  
+  normalized_url = normalize_url(current_url)
+  if normalized_url in page_data:
+    return page_data
+  
+  try:
+    print(f"Crawling {current_url}")
+    html = get_html(current_url)
+    if html is None:
+      return page_data
+    
+    page_data[normalized_url] = extract_page_data(html, current_url)
+    urls = get_urls_from_html(html, base_url)
+    for url in urls:
+      page_data = crawl_page(base_url, url, page_data)
+  except Exception as e:
+    print(f"Failed to crawl {current_url}: {str(e)}")
+    
+  return page_data
+  
+      
+  
 def get_html(url):
   r = requests.get(url, headers={"User-Agent": "BootCrawler/1.0"})
   if r.status_code >= 400:
