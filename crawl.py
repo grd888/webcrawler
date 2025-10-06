@@ -5,12 +5,16 @@ import aiohttp
 
 
 class AsyncCrawler:
-    def __init__(self, base_url):
+    def __init__(self, base_url, max_concurrent = 3, max_pages = 10):
         self.base_url = base_url
         self.base_domain = urlparse(base_url).netloc
         self.page_data = {}
         self.lock = asyncio.Lock()
-        self.max_concurrency = 10
+        self.max_concurrency = max_concurrent
+        self.max_pages = max_pages
+        self.should_stop = False
+        # initialize all_tasks with an empty set
+        self.all_tasks = set()
         self.semaphore = asyncio.Semaphore(self.max_concurrency)
         self.session = None
 
@@ -29,6 +33,15 @@ class AsyncCrawler:
                 return True
 
     async def get_html(self, url):
+        if self.should_stop:
+            return False
+        if len(self.page_data) >= self.max_pages:
+            self.should_stop = True
+            print("Reached maximum number of pages to crawl.")
+            for task in self.all_tasks:
+                task.cancel()
+            return False
+        
         try:
             async with self.session.get(
                 url, headers={"User-Agent": "BootCrawler/1.0"}
@@ -48,6 +61,8 @@ class AsyncCrawler:
         return self.page_data
 
     async def crawl_page(self, current_url):
+        if self.should_stop:
+            return
         # Check if URL is in same domain
         current_domain = urlparse(current_url).netloc
         if self.base_domain != current_domain:
@@ -93,8 +108,8 @@ class AsyncCrawler:
             print(f"Failed to crawl {current_url}: {str(e)}")
 
 
-async def crawl_site_async(base_url):
-    async with AsyncCrawler(base_url) as crawler:
+async def crawl_site_async(base_url, max_concurrent, max_pages):
+    async with AsyncCrawler(base_url, max_concurrent, max_pages) as crawler:
         return await crawler.crawl()
 
 
